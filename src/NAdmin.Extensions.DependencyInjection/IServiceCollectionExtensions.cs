@@ -10,20 +10,32 @@ namespace NAdmin.Extensions.DependencyInjection
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddNAdmin(this IServiceCollection services, Action<NAdminConfigurationBuilder> configuration)
+        public static Microsoft.Extensions.DependencyInjection.IMvcBuilder AddNAdmin(this Microsoft.Extensions.DependencyInjection.IMvcBuilder builder)
+        {
+            builder.AddApplicationPart(typeof(NAdminConfiguration).Assembly)
+                .AddControllersAsServices();
+
+            return builder;
+        }
+        
+        public static IServiceCollection AddNAdmin(this IServiceCollection services,
+            Func<NAdminConfigurationBuilder, NAdminConfigurationBuilder> configuration)
         {
             var configurationBuilder = new NAdminConfigurationBuilder();
-
-            configuration(configurationBuilder);
-
-            var config = configurationBuilder.Build();
+            
+            var config = configuration(configurationBuilder).Build();
+            
             services.AddSingleton(config);
+
+            services.Scan(scan => scan.FromAssemblies(config.EntitiesAssemblies)
+                .AddClasses(@class => @class.AssignableTo<INAdminEntity>())
+                .AsImplementedInterfaces());
 
             services.AddDbContext<NAdminDbContext>(opt =>
             {
                 opt.UseSqlServer(config.SqlServerConnectionString, conf =>
                 {
-                    conf.MigrationsAssembly(typeof(NAdminConfiguration).Assembly.FullName);
+                    conf.MigrationsAssembly(config.MigrationAssembly);
                 });
             });
 

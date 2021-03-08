@@ -25,11 +25,14 @@ namespace Sample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddNAdmin(conf =>
-            {
-                conf.UseSqlServerConnection(Configuration.GetConnectionString("AdminPanelConnectionString"));
-            });
-            
-            services.AddControllersWithViews();
+                conf
+                    .SetEntitiesAssemblies(typeof(Startup).Assembly)
+                    .UseSqlServerConnection(Configuration.GetConnectionString("AdminPanelConnectionString"))
+                    .SetMigrationAssembly(typeof(Startup).Assembly)
+            );
+
+            services.AddControllersWithViews()
+                .AddNAdmin();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
